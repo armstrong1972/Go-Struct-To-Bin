@@ -8,12 +8,6 @@ import (
 	"github.com/rs/xid"
 )
 
-type SliceMock struct {
-	addr uintptr
-	len  int
-	cap  int
-}
-
 type RSA struct {
 	RSA_Ver     int
 	RSA_Public  []byte
@@ -31,50 +25,35 @@ type User struct {
 	rsa      RSA
 }
 
-func (obj *User) Encode() ([]byte, error) {
-	var testStruct = obj
-	Len := unsafe.Sizeof(*testStruct)
-	testBytes := &SliceMock{
-		addr: uintptr(unsafe.Pointer(testStruct)),
-		cap:  int(Len),
-		len:  int(Len),
-	}
-	bin := *(*[]byte)(unsafe.Pointer(testBytes))
-
-	return bin, nil
-}
-
-func (u *User) Decode(bin []byte) (*User, error) {
-	var obj *User = *(**User)(unsafe.Pointer(&bin))
-	return obj, nil
-}
-
-var user = User{
-	userID:   2323,
-	username: "armstrong",
-	password: "password",
-	nickname: "SuperNova",
-	userGUID: xid.New(),
-	birthday: time.Now(),
-
-	rsa: RSA{
-		RSA_Ver:    999,
-		RSA_Public: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-	},
-}
-
 func main() {
-	user.token = xid.New()
-	user.rsa.RSA_Private = []byte{11, 22, 33, 44, 55}
+	// Init the value of user object
+	var user1 = User{
+		userID:   2323,
+		username: "armstrong",
+		password: "password",
+		nickname: "SuperNova",
+		userGUID: xid.New(),
+		birthday: time.Now(),
 
-	fmt.Println(user)
-	bin, err := user.Encode()
+		rsa: RSA{
+			RSA_Ver:    999,
+			RSA_Public: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		},
+	}
+	user1.token = xid.New()
+	user1.rsa.RSA_Private = []byte{11, 22, 33, 44, 55}
+	fmt.Println("\n---- Original : User1 ------\n", user1)
 
-	fmt.Println("\n[]byte is : ", bin)
-	fmt.Println(err)
-	fmt.Println()
+	// Encoding to Bin
+	buf, _ := EncodeStruct(&user1)
+	fmt.Println("\n---- Encoded : []byte ------\n ", buf)
 
-	user2, err := user.Decode(bin)
-	fmt.Println(user2)
-	fmt.Println(err)
+	// Decoding to Struct
+	var user2 *User = *(**User)(unsafe.Pointer(&buf))
+	fmt.Println("\n---- Decoded : User2 -------\n", user2)
+
+	// Check them are same address
+	user2.username = "Rainbow"
+	fmt.Println("\n\n  User1.name=", user1.username, " @ ", unsafe.Pointer(&user1))
+	fmt.Println("  User2.name=", user2.username, " @ ", unsafe.Pointer(user2))
 }
